@@ -15,6 +15,31 @@ if (!isset($_SESSION['alogin'])) {
 $error = '';
 $success = '';
 
+// Handle delete request
+if (isset($_GET['del'])) {
+    $id = intval($_GET['del']);
+    try {
+        $sql = "DELETE FROM tblattendance WHERE id = :id";
+        $query = $dbh->prepare($sql);
+        $query->bindParam(':id', $id, PDO::PARAM_INT);
+        if ($query->execute()) {
+            $_SESSION['success'] = "Attendance record deleted successfully";
+            header('location:manage-attendance.php');
+            exit();
+        } else {
+            $error = "Error deleting attendance record";
+        }
+    } catch(PDOException $e) {
+        $error = "Database error: " . $e->getMessage();
+    }
+}
+
+// Get success message from session
+if (isset($_SESSION['success'])) {
+    $success = $_SESSION['success'];
+    unset($_SESSION['success']);
+}
+
 // Get filter parameters
 $date_filter = isset($_GET['date']) ? $_GET['date'] : '';
 $department_filter = isset($_GET['department']) ? $_GET['department'] : '';
@@ -446,10 +471,32 @@ try {
       font-weight: 500;
       cursor: pointer;
       transition: all 0.3s;
+      text-decoration: none;
+      display: inline-block;
+      margin-right: 5px;
     }
 
     .btn-view:hover {
       background-color: #7AC6D2;
+      color: white;
+    }
+
+    .btn-delete {
+      background-color: transparent;
+      border: 1px solid #dc3545;
+      color: #dc3545;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-delete:hover {
+      background-color: #dc3545;
       color: white;
     }
   </style>
@@ -642,7 +689,7 @@ try {
             <th>Check Out</th>
             <th>Work Hours</th>
             <th>Status</th>
-            <th>Action</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -683,7 +730,10 @@ try {
             <td><?php echo $record['check_out_time'] ? date('h:i A', strtotime($record['check_out_time'])) : '-'; ?></td>
             <td><?php echo $record['work_hours'] ? number_format($record['work_hours'], 2) . ' hrs' : '-'; ?></td>
             <td><span class="status-badge <?php echo $statusClass; ?>"><?php echo htmlspecialchars($displayStatus); ?></span></td>
-            <td><a href="view-attendance.php?id=<?php echo htmlspecialchars($record['id']); ?>" class="btn-view">View</a></td>
+            <td>
+              <a href="view-attendance.php?id=<?php echo htmlspecialchars($record['id']); ?>" class="btn-view">View</a>
+              <a href="manage-attendance.php?del=<?php echo htmlspecialchars($record['id']); ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this attendance record?');">Delete</a>
+            </td>
           </tr>
           <?php 
                   $cnt++;
