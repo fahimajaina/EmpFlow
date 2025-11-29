@@ -338,12 +338,11 @@ if (isset($_SESSION['error'])) {
 
     <!-- attendance -->
     <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#attendanceMenu" role="button" aria-expanded="false" aria-controls="attendanceMenu">
-      <span class="material-icons">people</span> Attendance
+      <span class="material-icons">access_time</span> Attendance
       <span class="ms-auto">›</span>
     </a>
     <div class="collapse" id="attendanceMenu">
       <a href="manage-attendance.php" class="list-group-item list-group-item-action">Manage Attendance</a>
-      <a href="attendance-report.php" class="list-group-item list-group-item-action">Attendance Report</a>
       <a href="attendance-settings.php" class="list-group-item list-group-item-action">Attendance Settings</a>
     </div>
 

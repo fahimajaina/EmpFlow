@@ -314,7 +314,6 @@ if(isset($_SESSION['success_msg'])) {
     </a>
     <div class="collapse" id="deptMenu">
       <a href="adddepartment.php" class="list-group-item list-group-item-action">Add Department</a>
-
       <a href="managedepartments.php" class="list-group-item list-group-item-action">Manage Department</a>
     </div>
 
@@ -336,6 +335,16 @@ if(isset($_SESSION['success_msg'])) {
     <div class="collapse" id="employeeMenu">
       <a href="addemployee.php" class="list-group-item list-group-item-action">Add Employee</a>
       <a href="manageemployee.php" class="list-group-item list-group-item-action">Manage Employee</a>
+    </div>
+
+    <!-- attendance -->
+    <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#attendanceMenu" role="button" aria-expanded="false" aria-controls="attendanceMenu">
+      <span class="material-icons">access_time</span> Attendance
+      <span class="ms-auto">›</span>
+    </a>
+    <div class="collapse" id="attendanceMenu">
+      <a href="manage-attendance.php" class="list-group-item list-group-item-action">Manage Attendance</a>
+      <a href="attendance-settings.php" class="list-group-item list-group-item-action">Attendance Settings</a>
     </div>
 
     <!-- Leave Management -->

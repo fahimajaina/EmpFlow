@@ -280,32 +280,50 @@ if (isset($_SESSION['error'])) {
       <span class="material-icons">dashboard</span> Dashboard
     </a>
 
-    <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#deptMenu">
-      <span class="material-icons">apartment</span> Department <span class="ms-auto">›</span>
+    <!-- Department -->
+    <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#deptMenu" role="button" aria-expanded="false" aria-controls="deptMenu">
+      <span class="material-icons">apartment</span> Department
+      <span class="ms-auto">›</span>
     </a>
     <div class="collapse" id="deptMenu">
       <a href="adddepartment.php" class="list-group-item list-group-item-action">Add Department</a>
       <a href="managedepartments.php" class="list-group-item list-group-item-action">Manage Department</a>
     </div>
 
-    <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#leaveTypeMenu">
-      <span class="material-icons">event_note</span> Leave Type <span class="ms-auto">›</span>
+    <!-- Leave Type -->
+    <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#leaveTypeMenu" role="button" aria-expanded="false" aria-controls="leaveTypeMenu">
+      <span class="material-icons">event_note</span> Leave Type
+      <span class="ms-auto">›</span>
     </a>
     <div class="collapse" id="leaveTypeMenu">
       <a href="addleavetype.php" class="list-group-item list-group-item-action">Add Leave Type</a>
       <a href="manageleavetype.php" class="list-group-item list-group-item-action">Manage Leave Type</a>
     </div>
 
-    <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#employeeMenu">
-      <span class="material-icons">people</span> Employees <span class="ms-auto">›</span>
+    <!-- Employees -->
+    <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#employeeMenu" role="button" aria-expanded="false" aria-controls="employeeMenu">
+      <span class="material-icons">people</span> Employees
+      <span class="ms-auto">›</span>
     </a>
     <div class="collapse" id="employeeMenu">
       <a href="addemployee.php" class="list-group-item list-group-item-action">Add Employee</a>
       <a href="manageemployee.php" class="list-group-item list-group-item-action">Manage Employee</a>
     </div>
 
-    <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#leaveMgmtMenu">
-      <span class="material-icons">assignment</span> Leave Management <span class="ms-auto">›</span>
+    <!-- attendance -->
+    <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#attendanceMenu" role="button" aria-expanded="false" aria-controls="attendanceMenu">
+      <span class="material-icons">access_time</span> Attendance
+      <span class="ms-auto">›</span>
+    </a>
+    <div class="collapse" id="attendanceMenu">
+      <a href="manage-attendance.php" class="list-group-item list-group-item-action">Manage Attendance</a>
+      <a href="attendance-settings.php" class="list-group-item list-group-item-action">Attendance Settings</a>
+    </div>
+
+    <!-- Leave Management -->
+    <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#leaveMgmtMenu" role="button" aria-expanded="false" aria-controls="leaveMgmtMenu">
+      <span class="material-icons">assignment</span> Leave Management
+      <span class="ms-auto">›</span>
     </a>
     <div class="collapse" id="leaveMgmtMenu">
       <a href="leaves.php" class="list-group-item list-group-item-action">All Leaves</a>
@@ -314,6 +332,7 @@ if (isset($_SESSION['error'])) {
       <a href="notapproved-leaves.php" class="list-group-item list-group-item-action">Not Approved Leaves</a>
     </div>
 
+    <!-- Other Links -->
     <a href="changepassword.php" class="list-group-item list-group-item-action d-flex align-items-center">
       <span class="material-icons">lock</span> Change Password
     </a>

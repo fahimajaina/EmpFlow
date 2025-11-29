@@ -336,6 +336,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <a href="manageemployee.php" class="list-group-item list-group-item-action">Manage Employee</a>
     </div>
 
+    <!-- attendance -->
+    <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#attendanceMenu" role="button" aria-expanded="false" aria-controls="attendanceMenu">
+      <span class="material-icons">access_time</span> Attendance
+      <span class="ms-auto">›</span>
+    </a>
+    <div class="collapse" id="attendanceMenu">
+      <a href="manage-attendance.php" class="list-group-item list-group-item-action">Manage Attendance</a>
+      <a href="attendance-settings.php" class="list-group-item list-group-item-action">Attendance Settings</a>
+    </div>
+
     <!-- Leave Management -->
     <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#leaveMgmtMenu" role="button" aria-expanded="false" aria-controls="leaveMgmtMenu">
       <span class="material-icons">assignment</span> Leave Management
