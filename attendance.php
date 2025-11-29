@@ -50,9 +50,12 @@ if (isset($_POST['check_in'])) {
             $now = new DateTime();
             $check_in_time = $now->format('H:i:s');
             
-            // Determine status based on work start time
+            // Determine status based on work start time (comparing only hours and minutes)
+            $check_in_hhmm = substr($check_in_time, 0, 5); // Get HH:MM
+            $work_start_hhmm = substr($work_start, 0, 5); // Get HH:MM
+            
             $status = 'Present';
-            if (strtotime($check_in_time) > strtotime($work_start)) {
+            if ($check_in_hhmm > $work_start_hhmm) {
                 $status = 'Late';
             }
             

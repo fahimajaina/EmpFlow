@@ -650,12 +650,15 @@ try {
           if (count($attendanceRecords) > 0) {
               $cnt = 1;
               foreach($attendanceRecords as $record) {
-                  // Recalculate status based on check-in time vs work start time
+                  // Recalculate status based on check-in time vs work start time (comparing only HH:MM)
                   $displayStatus = $record['status'];
                   
                   // If there's a check-in time, verify if it's late
                   if ($record['check_in_time']) {
-                      if (strtotime($record['check_in_time']) > strtotime($work_start)) {
+                      $check_in_hhmm = substr($record['check_in_time'], 0, 5); // Get HH:MM
+                      $work_start_hhmm = substr($work_start, 0, 5); // Get HH:MM
+                      
+                      if ($check_in_hhmm > $work_start_hhmm) {
                           $displayStatus = 'Late';
                       } elseif ($displayStatus != 'Absent') {
                           $displayStatus = 'Present';
