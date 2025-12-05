@@ -627,6 +627,16 @@ try {
       <a href="managedepartments.php" class="list-group-item list-group-item-action">Manage Department</a>
     </div>
 
+    <!-- Designation -->
+    <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#designationMenu" role="button" aria-expanded="false" aria-controls="designationMenu">
+      <span class="material-icons">badge</span> Designation
+      <span class="ms-auto">›</span>
+    </a>
+    <div class="collapse" id="designationMenu">
+      <a href="adddesignation.php" class="list-group-item list-group-item-action">Add Designation</a>
+      <a href="managedesignation.php" class="list-group-item list-group-item-action">Manage Designation</a>
+    </div>
+
     <!-- Leave Type -->
     <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#leaveTypeMenu" role="button" aria-expanded="false" aria-controls="leaveTypeMenu">
       <span class="material-icons">event_note</span> Leave Type
