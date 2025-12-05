@@ -536,7 +536,7 @@ try {
       <div class="col-md-6">
         <label for="designation" class="form-label">Designation</label>
         <select class="form-select" id="designation" name="designation">
-          <option value="">Select Designation (Optional)</option>
+          <option value="">Select Designation</option>
           <?php foreach ($designations as $desig): ?>
             <option value="<?php echo $desig['id']; ?>"><?php echo $desig['DesignationName'] . ' (' . $desig['DepartmentName'] . ')'; ?></option>
           <?php endforeach; ?>

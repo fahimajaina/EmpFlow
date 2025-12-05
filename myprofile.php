@@ -18,13 +18,18 @@ try {
     $sql = "SELECT 
     e.*, 
     d.id AS DepartmentId, 
-    d.DepartmentName AS DeptName
+    d.DepartmentName AS DeptName,
+    des.DesignationName
 FROM 
     tblemployees e
 LEFT JOIN 
     tbldepartments d 
 ON 
     e.Department = d.id
+LEFT JOIN 
+    tbldesignation des 
+ON 
+    e.designationid = des.id
 WHERE 
     e.id = :eid
 ";
@@ -44,6 +49,12 @@ WHERE
     $query->execute();
     $departments = $query->fetchAll(PDO::FETCH_ASSOC);
     
+    // Fetch all designations for the dropdown
+    $sql = "SELECT d.id, d.DesignationName, dept.DepartmentName FROM tbldesignation d LEFT JOIN tbldepartments dept ON d.deptid = dept.id ORDER BY dept.DepartmentName, d.DesignationName";
+    $query = $dbh->prepare($sql);
+    $query->execute();
+    $designations = $query->fetchAll(PDO::FETCH_ASSOC);
+    
     if (empty($departments)) {
         $error = "No departments found. Please contact your administrator.";
     }
@@ -62,6 +73,7 @@ if (isset($_POST['update'])) {
     $gender = $_POST['gender'];
     $dob = trim($_POST['dob']);
     $department = $_POST['department'];
+    $designation = !empty($_POST['designation']) ? $_POST['designation'] : null;
     $address = trim($_POST['address']);
     $city = trim($_POST['city']);
     $country = trim($_POST['country']);
@@ -121,6 +133,7 @@ if (isset($_POST['update'])) {
                     Gender = :gender,
                     Dob = :dob,
                     Department = :department,
+                    designationid = :designation,
                     Address = :address,
                     City = :city,
                     Country = :country
@@ -133,6 +146,7 @@ if (isset($_POST['update'])) {
             $query->bindParam(':gender', $gender, PDO::PARAM_STR);
             $query->bindParam(':dob', $dob, PDO::PARAM_STR);
             $query->bindParam(':department', $department, PDO::PARAM_STR);
+            $query->bindParam(':designation', $designation, PDO::PARAM_INT);
             $query->bindParam(':address', $address, PDO::PARAM_STR);
             $query->bindParam(':city', $city, PDO::PARAM_STR);
             $query->bindParam(':country', $country, PDO::PARAM_STR);
@@ -410,6 +424,20 @@ if (isset($_SESSION['success'])) {
                                 <option value="<?php echo htmlentities($dept['id']); ?>" 
                                     <?php echo ($result->Department == $dept['id']) ? 'selected' : ''; ?>>
                                     <?php echo htmlentities($dept['DepartmentName']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="designation" class="form-label">Designation</label>
+                    <select class="form-select" id="designation" name="designation">
+                        <option value="">Select Designation</option>
+                        <?php if (!empty($designations)): ?>
+                            <?php foreach($designations as $desig): ?>
+                                <option value="<?php echo htmlentities($desig['id']); ?>" 
+                                    <?php echo ($result->designationid == $desig['id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlentities($desig['DesignationName'] . ' (' . $desig['DepartmentName'] . ')'); ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>
