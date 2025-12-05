@@ -320,8 +320,8 @@ if (isset($_SESSION['success'])) {
   <div class="sidebar-content">
     <div class="text-center py-4">
       <img src="assets/images/profile-image.png" class="rounded-circle mb-2" width="80" alt="Profile Image">
-      <h6 class="mb-0" style="font-weight:600;"><?php echo htmlspecialchars($employee['FirstName'] . ' ' . $employee['LastName']); ?></h6>
-      <small class="text-muted"><?php echo htmlspecialchars($employee['EmpId']); ?></small>
+      <h6 class="mb-0" style="font-weight:600;"><?php echo htmlspecialchars($result->FirstName . ' ' . $result->LastName); ?></h6>
+      <small class="text-muted"><?php echo htmlspecialchars($result->EmpId); ?></small>
     </div>
     <hr class="mx-3">
 
