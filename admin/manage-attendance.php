@@ -843,11 +843,15 @@ try {
             </td>
             <td>
               <?php if($approvalStatus == 'Pending'): ?>
-                <a href="manage-attendance.php?approve=<?php echo htmlspecialchars($record['id']); ?>" class="btn-approve" onclick="return confirm('Approve this attendance record?');">Approve</a>
-                <a href="manage-attendance.php?reject=<?php echo htmlspecialchars($record['id']); ?>" class="btn-reject" onclick="return confirm('Reject this attendance record?');">Reject</a>
+                <div style="display: flex; gap: 5px; white-space: nowrap;">
+                  <a href="manage-attendance.php?approve=<?php echo htmlspecialchars($record['id']); ?>" class="btn-approve" onclick="return confirm('Approve this attendance record?');">Approve</a>
+                  <a href="manage-attendance.php?reject=<?php echo htmlspecialchars($record['id']); ?>" class="btn-reject" onclick="return confirm('Reject this attendance record?');">Reject</a>
+                </div>
               <?php else: ?>
-                <a href="view-attendance.php?id=<?php echo htmlspecialchars($record['id']); ?>" class="btn-view">View</a>
-                <a href="manage-attendance.php?del=<?php echo htmlspecialchars($record['id']); ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this attendance record?');">Delete</a>
+                <div style="display: flex; gap: 5px; white-space: nowrap;">
+                  <a href="view-attendance.php?id=<?php echo htmlspecialchars($record['id']); ?>\" class="btn-view">View</a>
+                  <a href="manage-attendance.php?del=<?php echo htmlspecialchars($record['id']); ?>\" class="btn-delete" onclick="return confirm('Are you sure you want to delete this attendance record?');">Delete</a>
+                </div>
               <?php endif; ?>
             </td>
           </tr>
