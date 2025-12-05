@@ -411,15 +411,17 @@ if (isset($_SESSION['error'])) {
             </td>
             <td><?php echo htmlentities(date('Y-m-d H:i', strtotime($emp['RegDate']))); ?></td>
             <td>
-              <a href="editemployee.php?id=<?php echo htmlentities($emp['id']); ?>" class="btn btn-view btn-action me-1">Edit</a>
-              <form method="POST" style="display: inline;">
-                <input type="hidden" name="empId" value="<?php echo htmlentities($emp['id']); ?>">
-                <button type="submit" name="toggle_status" 
-                        class="btn btn-danger btn-action"
-                        onclick="return confirm('Are you sure you want to <?php echo $emp['Status'] ? 'deactivate' : 'activate'; ?> this employee?');">
-                  <?php echo $emp['Status'] ? 'Deactivate' : 'Activate'; ?>
-                </button>
-              </form>
+              <div style="display: flex; gap: 5px; white-space: nowrap;">
+                <a href="editemployee.php?id=<?php echo htmlentities($emp['id']); ?>" class="btn btn-view btn-action">Edit</a>
+                <form method="POST" style="display: inline; margin: 0;">
+                  <input type="hidden" name="empId" value="<?php echo htmlentities($emp['id']); ?>">
+                  <button type="submit" name="toggle_status" 
+                          class="btn btn-danger btn-action"
+                          onclick="return confirm('Are you sure you want to <?php echo $emp['Status'] ? 'deactivate' : 'activate'; ?> this employee?');">
+                    <?php echo $emp['Status'] ? 'Deactivate' : 'Activate'; ?>
+                  </button>
+                </form>
+              </div>
             </td>
           </tr>
           <?php 
@@ -470,7 +472,7 @@ if (isset($_SESSION['error'])) {
   /*var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
       return new bootstrap.Tooltip(tooltipTriggerEl)
-  });8?
+  });*/
 </script>
 </body>
 </html>
