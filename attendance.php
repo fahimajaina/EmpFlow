@@ -619,6 +619,7 @@ $attendanceHistory = $historyQuery->fetchAll(PDO::FETCH_ASSOC);
             <th>Check Out</th>
             <th>Work Hours</th>
             <th>Status</th>
+            <th>Approval</th>
           </tr>
         </thead>
         <tbody>
@@ -626,11 +627,20 @@ $attendanceHistory = $historyQuery->fetchAll(PDO::FETCH_ASSOC);
           if (count($attendanceHistory) > 0) {
               $cnt = 1;
               foreach($attendanceHistory as $record) {
-                  // Determine badge class
+                  // Get approval status
+                  $approvalStatus = isset($record['approval_status']) ? $record['approval_status'] : 'Pending';
+                  
+                  // Determine display status (show Absent if rejected)
+                  $displayStatus = $record['status'];
+                  if ($approvalStatus == 'Rejected') {
+                      $displayStatus = 'Absent';
+                  }
+                  
+                  // Determine badge class based on display status
                   $badgeClass = 'bg-success';
-                  if($record['status'] == 'Late') {
+                  if($displayStatus == 'Late') {
                       $badgeClass = 'bg-warning text-dark';
-                  } elseif($record['status'] == 'Absent') {
+                  } elseif($displayStatus == 'Absent') {
                       $badgeClass = 'bg-danger';
                   }
                   
@@ -641,6 +651,14 @@ $attendanceHistory = $historyQuery->fetchAll(PDO::FETCH_ASSOC);
                       $minutes = round(($record['work_hours'] - $hours) * 60);
                       $workHoursDisplay = $hours . 'h ' . $minutes . 'm';
                   }
+                  
+                  // Set approval badge class
+                  $approvalBadgeClass = 'bg-warning text-dark';
+                  if($approvalStatus == 'Approved') {
+                      $approvalBadgeClass = 'bg-success';
+                  } elseif($approvalStatus == 'Rejected') {
+                      $approvalBadgeClass = 'bg-danger';
+                  }
           ?>
           <tr>
             <td><?php echo $cnt; ?></td>
@@ -648,7 +666,8 @@ $attendanceHistory = $historyQuery->fetchAll(PDO::FETCH_ASSOC);
             <td><?php echo $record['check_in_time'] ? date('h:i A', strtotime($record['check_in_time'])) : '-'; ?></td>
             <td><?php echo $record['check_out_time'] ? date('h:i A', strtotime($record['check_out_time'])) : '-'; ?></td>
             <td><?php echo $workHoursDisplay; ?></td>
-            <td><span class="badge <?php echo $badgeClass; ?>"><?php echo htmlspecialchars($record['status']); ?></span></td>
+            <td><span class="badge <?php echo $badgeClass; ?>"><?php echo htmlspecialchars($displayStatus); ?></span></td>
+            <td><span class="badge <?php echo $approvalBadgeClass; ?>"><?php echo htmlspecialchars($approvalStatus); ?></span></td>
           </tr>
           <?php 
                   $cnt++;
@@ -656,7 +675,7 @@ $attendanceHistory = $historyQuery->fetchAll(PDO::FETCH_ASSOC);
           } else {
           ?>
           <tr>
-            <td colspan="6" class="text-center text-muted py-4">
+            <td colspan="7" class="text-center text-muted py-4">
               <span class="material-icons" style="font-size: 48px; opacity: 0.3;">event_busy</span>
               <p class="mt-2">No attendance records found</p>
             </td>

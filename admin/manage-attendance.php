@@ -34,6 +34,44 @@ if (isset($_GET['del'])) {
     }
 }
 
+// Handle approval request
+if (isset($_GET['approve'])) {
+    $id = intval($_GET['approve']);
+    try {
+        $sql = "UPDATE tblattendance SET approval_status = 'Approved' WHERE id = :id";
+        $query = $dbh->prepare($sql);
+        $query->bindParam(':id', $id, PDO::PARAM_INT);
+        if ($query->execute()) {
+            $_SESSION['success'] = "Attendance approved successfully";
+            header('location:manage-attendance.php');
+            exit();
+        } else {
+            $error = "Error approving attendance";
+        }
+    } catch(PDOException $e) {
+        $error = "Database error: " . $e->getMessage();
+    }
+}
+
+// Handle rejection request
+if (isset($_GET['reject'])) {
+    $id = intval($_GET['reject']);
+    try {
+        $sql = "UPDATE tblattendance SET approval_status = 'Rejected', status = 'Absent' WHERE id = :id";
+        $query = $dbh->prepare($sql);
+        $query->bindParam(':id', $id, PDO::PARAM_INT);
+        if ($query->execute()) {
+            $_SESSION['success'] = "Attendance rejected successfully";
+            header('location:manage-attendance.php');
+            exit();
+        } else {
+            $error = "Error rejecting attendance";
+        }
+    } catch(PDOException $e) {
+        $error = "Database error: " . $e->getMessage();
+    }
+}
+
 // Get success message from session
 if (isset($_SESSION['success'])) {
     $success = $_SESSION['success'];
@@ -448,6 +486,21 @@ try {
       color: #721c24;
     }
 
+    .approval-pending {
+      background: #ffc107;
+      color: #000;
+    }
+
+    .approval-approved {
+      background: #28a745;
+      color: #fff;
+    }
+
+    .approval-rejected {
+      background: #dc3545;
+      color: #fff;
+    }
+
     .no-records {
       text-align: center;
       padding: 40px;
@@ -498,6 +551,45 @@ try {
     .btn-delete:hover {
       background-color: #dc3545;
       color: white;
+    }
+
+    .btn-approve {
+      background-color: transparent;
+      border: 1px solid #28a745;
+      color: #28a745;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    .btn-approve:hover {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .btn-reject {
+      background-color: transparent;
+      border: 1px solid #ffc107;
+      color: #856404;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-reject:hover {
+      background-color: #ffc107;
+      color: #000;
     }
   </style>
 </head>
@@ -689,6 +781,7 @@ try {
             <th>Check Out</th>
             <th>Work Hours</th>
             <th>Status</th>
+            <th>Approval</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -697,11 +790,17 @@ try {
           if (count($attendanceRecords) > 0) {
               $cnt = 1;
               foreach($attendanceRecords as $record) {
+                  // Get approval status first
+                  $approvalStatus = isset($record['approval_status']) ? $record['approval_status'] : 'Pending';
+                  
                   // Recalculate status based on check-in time vs work start time (comparing only HH:MM)
                   $displayStatus = $record['status'];
                   
-                  // If there's a check-in time, verify if it's late
-                  if ($record['check_in_time']) {
+                  // If rejected, always show Absent
+                  if ($approvalStatus == 'Rejected') {
+                      $displayStatus = 'Absent';
+                  } elseif ($record['check_in_time']) {
+                      // If there's a check-in time, verify if it's late
                       $check_in_hhmm = substr($record['check_in_time'], 0, 5); // Get HH:MM
                       $work_start_hhmm = substr($work_start, 0, 5); // Get HH:MM
                       
@@ -731,8 +830,25 @@ try {
             <td><?php echo $record['work_hours'] ? number_format($record['work_hours'], 2) . ' hrs' : '-'; ?></td>
             <td><span class="status-badge <?php echo $statusClass; ?>"><?php echo htmlspecialchars($displayStatus); ?></span></td>
             <td>
-              <a href="view-attendance.php?id=<?php echo htmlspecialchars($record['id']); ?>" class="btn-view">View</a>
-              <a href="manage-attendance.php?del=<?php echo htmlspecialchars($record['id']); ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this attendance record?');">Delete</a>
+              <?php 
+              $approvalStatus = isset($record['approval_status']) ? $record['approval_status'] : 'Pending';
+              $approvalClass = 'approval-pending';
+              if($approvalStatus == 'Approved') {
+                  $approvalClass = 'approval-approved';
+              } elseif($approvalStatus == 'Rejected') {
+                  $approvalClass = 'approval-rejected';
+              }
+              ?>
+              <span class="status-badge <?php echo $approvalClass; ?>"><?php echo htmlspecialchars($approvalStatus); ?></span>
+            </td>
+            <td>
+              <?php if($approvalStatus == 'Pending'): ?>
+                <a href="manage-attendance.php?approve=<?php echo htmlspecialchars($record['id']); ?>" class="btn-approve" onclick="return confirm('Approve this attendance record?');">Approve</a>
+                <a href="manage-attendance.php?reject=<?php echo htmlspecialchars($record['id']); ?>" class="btn-reject" onclick="return confirm('Reject this attendance record?');">Reject</a>
+              <?php else: ?>
+                <a href="view-attendance.php?id=<?php echo htmlspecialchars($record['id']); ?>" class="btn-view">View</a>
+                <a href="manage-attendance.php?del=<?php echo htmlspecialchars($record['id']); ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this attendance record?');">Delete</a>
+              <?php endif; ?>
             </td>
           </tr>
           <?php 
@@ -741,7 +857,7 @@ try {
           } else {
           ?>
           <tr>
-            <td colspan="10" class="no-records">
+            <td colspan="11" class="no-records">
               <div class="material-icons">event_busy</div>
               <p>No attendance records found</p>
             </td>
