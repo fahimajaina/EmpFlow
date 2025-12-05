@@ -15,6 +15,17 @@ if (!isset($_SESSION['alogin'])) {
 $error = '';
 $success = '';
 
+// Check for session messages
+if (isset($_SESSION['error'])) {
+    $error = $_SESSION['error'];
+    unset($_SESSION['error']);
+}
+
+if (isset($_SESSION['success'])) {
+    $success = $_SESSION['success'];
+    unset($_SESSION['success']);
+}
+
 // Handle delete request
 if (isset($_GET['del'])) {
     $id = intval($_GET['del']);
@@ -862,7 +873,7 @@ try {
                 </div>
               <?php else: ?>
                 <div style="display: flex; gap: 5px; white-space: nowrap;">
-                  <a href="view-attendance.php?id=<?php echo htmlspecialchars($record['id']); ?>\" class="btn-view">View</a>
+                  <a href="view-attendance.php?empid=<?php echo htmlspecialchars($record['empid']); ?>" class="btn-view">View</a>
                   <a href="manage-attendance.php?del=<?php echo htmlspecialchars($record['id']); ?>\" class="btn-delete" onclick="return confirm('Are you sure you want to delete this attendance record?');">Delete</a>
                 </div>
               <?php endif; ?>

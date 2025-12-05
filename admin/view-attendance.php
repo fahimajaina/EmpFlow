@@ -8,66 +8,162 @@ if (!isset($_SESSION['alogin'])) {
     exit();
 }
 
-// Check if attendance ID is provided
-if (!isset($_GET['id']) || empty($_GET['id'])) {
+// Check if employee ID is provided
+if (!isset($_GET['empid']) || empty($_GET['empid'])) {
+    $_SESSION['error'] = "Employee ID is required";
     header('location: manage-attendance.php');
     exit();
 }
 
-$attendance_id = intval($_GET['id']);
+$empid = intval($_GET['empid']);
 
-// Fetch attendance record with employee information
-$sql = "SELECT a.*, e.FirstName, e.LastName, e.EmpId, e.EmailId, e.Phonenumber, e.Gender,
-        d.DepartmentName, des.DesignationName
-        FROM tblattendance a 
-        INNER JOIN tblemployees e ON a.empid = e.id 
-        LEFT JOIN tbldepartments d ON e.Department = d.id
-        LEFT JOIN tbldesignation des ON e.designationid = des.id
-        WHERE a.id = :attendance_id";
+// Get date range from URL or set defaults (last 30 days)
+$from_date = isset($_GET['from_date']) && !empty($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-d', strtotime('-30 days'));
+$to_date = isset($_GET['to_date']) && !empty($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
+
+// Fetch employee information
+$empSql = "SELECT e.FirstName, e.LastName, e.EmpId, e.EmailId, e.Phonenumber, e.Gender,
+           d.DepartmentName, des.DesignationName
+           FROM tblemployees e 
+           LEFT JOIN tbldepartments d ON e.Department = d.id
+           LEFT JOIN tbldesignation des ON e.designationid = des.id
+           WHERE e.id = :empid";
 
 try {
-    $query = $dbh->prepare($sql);
-    $query->bindParam(':attendance_id', $attendance_id, PDO::PARAM_INT);
-    $query->execute();
-    $attendance = $query->fetch(PDO::FETCH_ASSOC);
+    $empQuery = $dbh->prepare($empSql);
+    $empQuery->bindParam(':empid', $empid, PDO::PARAM_INT);
+    $empQuery->execute();
+    $employee = $empQuery->fetch(PDO::FETCH_ASSOC);
 
-    if (!$attendance) {
+    if (!$employee) {
+        $_SESSION['error'] = "Employee not found with ID: " . $empid;
         header('location: manage-attendance.php');
         exit();
     }
 
-    $empid = $attendance['empid'];
+    // Fetch attendance settings for late detection
+    $settingsSql = "SELECT work_start FROM tblattendancesettings ORDER BY id DESC LIMIT 1";
+    $settingsQuery = $dbh->prepare($settingsSql);
+    $settingsQuery->execute();
+    $attendanceSettings = $settingsQuery->fetch(PDO::FETCH_ASSOC);
+    $work_start = $attendanceSettings ? $attendanceSettings['work_start'] : '09:00:00';
 
-    // Calculate attendance statistics
-    $statsSql = "SELECT 
-                    COUNT(*) as total_days,
-                    SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as total_present,
-                    SUM(CASE WHEN status = 'Late' THEN 1 ELSE 0 END) as total_late,
-                    SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) as total_absent,
-                    AVG(work_hours) as avg_hours
-                 FROM tblattendance 
-                 WHERE empid = :empid 
-                 AND YEAR(attendance_date) = YEAR(CURRENT_DATE())";
-    $statsQuery = $dbh->prepare($statsSql);
-    $statsQuery->bindParam(':empid', $empid, PDO::PARAM_INT);
-    $statsQuery->execute();
-    $stats = $statsQuery->fetch(PDO::FETCH_ASSOC);
+    // Fetch attendance records for date range
+    $attSql = "SELECT * FROM tblattendance 
+               WHERE empid = :empid 
+               AND attendance_date BETWEEN :from_date AND :to_date
+               ORDER BY attendance_date ASC";
+    $attQuery = $dbh->prepare($attSql);
+    $attQuery->bindParam(':empid', $empid, PDO::PARAM_INT);
+    $attQuery->bindParam(':from_date', $from_date, PDO::PARAM_STR);
+    $attQuery->bindParam(':to_date', $to_date, PDO::PARAM_STR);
+    $attQuery->execute();
+    $attendanceRecords = $attQuery->fetchAll(PDO::FETCH_ASSOC);
 
-    // Calculate leave statistics
-    $leavesSql = "SELECT 
-                    SUM(CASE WHEN Status = 1 THEN 1 ELSE 0 END) as approved_leaves,
-                    SUM(CASE WHEN Status = 0 THEN 1 ELSE 0 END) as pending_leaves,
-                    SUM(CASE WHEN Status = 2 THEN 1 ELSE 0 END) as rejected_leaves
-                  FROM tblleaves 
-                  WHERE empid = :empid 
-                  AND YEAR(PostingDate) = YEAR(CURRENT_DATE())";
-    $leavesQuery = $dbh->prepare($leavesSql);
-    $leavesQuery->bindParam(':empid', $empid, PDO::PARAM_INT);
-    $leavesQuery->execute();
-    $leaves = $leavesQuery->fetch(PDO::FETCH_ASSOC);
+    // Create array indexed by date
+    $attendanceByDate = [];
+    foreach ($attendanceRecords as $record) {
+        $attendanceByDate[$record['attendance_date']] = $record;
+    }
+
+    // Fetch approved leaves that overlap with date range
+    $leaveSql = "SELECT l.FromDate, l.ToDate, lt.LeaveType 
+                 FROM tblleaves l
+                 INNER JOIN tblleavetype lt ON l.LeaveTypeID = lt.id
+                 WHERE l.empid = :empid 
+                 AND l.Status = 1
+                 AND (
+                     (l.FromDate BETWEEN :from_date AND :to_date)
+                     OR (l.ToDate BETWEEN :from_date AND :to_date)
+                     OR (l.FromDate <= :from_date AND l.ToDate >= :to_date)
+                 )";
+    $leaveQuery = $dbh->prepare($leaveSql);
+    $leaveQuery->bindParam(':empid', $empid, PDO::PARAM_INT);
+    $leaveQuery->bindParam(':from_date', $from_date, PDO::PARAM_STR);
+    $leaveQuery->bindParam(':to_date', $to_date, PDO::PARAM_STR);
+    $leaveQuery->execute();
+    $leaveRecords = $leaveQuery->fetchAll(PDO::FETCH_ASSOC);
+
+    // Create array of dates with leave types
+    $leaveByDate = [];
+    foreach ($leaveRecords as $leave) {
+        $currentDate = strtotime($leave['FromDate']);
+        $endDate = strtotime($leave['ToDate']);
+        
+        while ($currentDate <= $endDate) {
+            $dateStr = date('Y-m-d', $currentDate);
+            $leaveByDate[$dateStr] = $leave['LeaveType'];
+            $currentDate = strtotime('+1 day', $currentDate);
+        }
+    }
+
+    // Generate all dates in range
+    $dateRange = [];
+    $currentDate = strtotime($from_date);
+    $endDate = strtotime($to_date);
+    
+    while ($currentDate <= $endDate) {
+        $dateStr = date('Y-m-d', $currentDate);
+        $dateRange[$dateStr] = [
+            'date' => $dateStr,
+            'attendance' => isset($attendanceByDate[$dateStr]) ? $attendanceByDate[$dateStr] : null,
+            'leave_type' => isset($leaveByDate[$dateStr]) ? $leaveByDate[$dateStr] : null
+        ];
+        $currentDate = strtotime('+1 day', $currentDate);
+    }
+
+    // Calculate statistics for selected date range
+    $total_days = count($dateRange);
+    $total_present = 0;
+    $total_late = 0;
+    $total_absent = 0;
+    $total_on_leave = 0;
+    $total_work_hours = 0;
+
+    foreach ($dateRange as $day) {
+        if ($day['leave_type']) {
+            $total_on_leave++;
+        } elseif ($day['attendance']) {
+            // Recalculate status based on check-in time vs work start time (same logic as display)
+            $status = $day['attendance']['status'];
+            $displayStatus = $status;
+            
+            // Get approval status
+            $approvalStatus = isset($day['attendance']['approval_status']) ? $day['attendance']['approval_status'] : 'Pending';
+            
+            // If rejected, show Absent
+            if ($approvalStatus == 'Rejected') {
+                $displayStatus = 'Absent';
+            } elseif ($day['attendance']['check_in_time']) {
+                // If there's a check-in time, verify if it's late
+                $check_in_hhmm = substr($day['attendance']['check_in_time'], 0, 5); // Get HH:MM
+                $work_start_hhmm = substr($work_start, 0, 5); // Get HH:MM
+                
+                if ($check_in_hhmm > $work_start_hhmm) {
+                    $displayStatus = 'Late';
+                } elseif ($displayStatus != 'Absent') {
+                    $displayStatus = 'Present';
+                }
+            }
+            
+            // Count based on recalculated status
+            if ($displayStatus == 'Present') {
+                $total_present++;
+                $total_work_hours += floatval($day['attendance']['work_hours']);
+            } elseif ($displayStatus == 'Late') {
+                $total_late++;
+                $total_work_hours += floatval($day['attendance']['work_hours']);
+            } elseif ($displayStatus == 'Absent') {
+                $total_absent++;
+            }
+        }
+    }
+
+    $avg_hours = ($total_present + $total_late > 0) ? $total_work_hours / ($total_present + $total_late) : 0;
 
 } catch(PDOException $e) {
     error_log("Error in view-attendance.php: " . $e->getMessage());
+    $_SESSION['error'] = "Database error: " . $e->getMessage();
     header('location: manage-attendance.php');
     exit();
 }
@@ -451,93 +547,163 @@ try {
         <tbody>
           <tr>
             <td>Employee Name</td>
-            <td><?php echo htmlspecialchars($attendance['FirstName'] . ' ' . $attendance['LastName']); ?></td>
+            <td><?php echo htmlspecialchars($employee['FirstName'] . ' ' . $employee['LastName']); ?></td>
           </tr>
           <tr>
             <td>Employee ID</td>
-            <td><?php echo htmlspecialchars($attendance['EmpId']); ?></td>
+            <td><?php echo htmlspecialchars($employee['EmpId']); ?></td>
           </tr>
           <tr>
             <td>Email</td>
-            <td><?php echo htmlspecialchars($attendance['EmailId']); ?></td>
+            <td><?php echo htmlspecialchars($employee['EmailId']); ?></td>
           </tr>
           <tr>
             <td>Phone Number</td>
-            <td><?php echo htmlspecialchars($attendance['Phonenumber']); ?></td>
+            <td><?php echo htmlspecialchars($employee['Phonenumber']); ?></td>
           </tr>
           <tr>
             <td>Department</td>
-            <td><?php echo htmlspecialchars($attendance['DepartmentName']); ?></td>
+            <td><?php echo htmlspecialchars($employee['DepartmentName']); ?></td>
           </tr>
           <tr>
             <td>Designation</td>
-            <td><?php echo htmlspecialchars($attendance['DesignationName'] ?? 'N/A'); ?></td>
+            <td><?php echo htmlspecialchars($employee['DesignationName'] ?? 'N/A'); ?></td>
           </tr>
           <tr>
             <td>Gender</td>
-            <td><?php echo htmlspecialchars($attendance['Gender']); ?></td>
+            <td><?php echo htmlspecialchars($employee['Gender']); ?></td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- Attendance Record Details -->
+  <!-- Date Range Filter -->
+  <div class="card">
+    <div class="card-body">
+      <div class="card-title">
+        <span class="material-icons">date_range</span>
+        Select Date Range
+      </div>
+      <form method="GET" action="view-attendance.php" class="row g-3">
+        <input type="hidden" name="empid" value="<?php echo $empid; ?>">
+        <div class="col-md-4">
+          <label for="from_date" class="form-label">From Date</label>
+          <input type="date" class="form-control" id="from_date" name="from_date" value="<?php echo htmlspecialchars($from_date); ?>" required>
+        </div>
+        <div class="col-md-4">
+          <label for="to_date" class="form-label">To Date</label>
+          <input type="date" class="form-control" id="to_date" name="to_date" value="<?php echo htmlspecialchars($to_date); ?>" required>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">
+            <span class="material-icons" style="font-size: 18px; vertical-align: middle;">search</span>
+            Filter
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Attendance Records -->
   <div class="card">
     <div class="card-body">
       <div class="card-title">
         <span class="material-icons">event</span>
-        Attendance Record
+        Attendance Records (<?php echo date('M d, Y', strtotime($from_date)); ?> - <?php echo date('M d, Y', strtotime($to_date)); ?>)
       </div>
-      <table class="table info-table mb-0">
-        <tbody>
-          <tr>
-            <td>Date</td>
-            <td><?php echo date('F d, Y', strtotime($attendance['attendance_date'])); ?></td>
-          </tr>
-          <tr>
-            <td>Check In Time</td>
-            <td><?php echo $attendance['check_in_time'] ? date('h:i A', strtotime($attendance['check_in_time'])) : '-'; ?></td>
-          </tr>
-          <tr>
-            <td>Check Out Time</td>
-            <td><?php echo $attendance['check_out_time'] ? date('h:i A', strtotime($attendance['check_out_time'])) : '-'; ?></td>
-          </tr>
-          <tr>
-            <td>Work Hours</td>
-            <td><?php echo $attendance['work_hours'] ? number_format($attendance['work_hours'], 2) . ' hrs' : '-'; ?></td>
-          </tr>
-          <tr>
-            <td>Status</td>
-            <td>
-              <?php 
-              $statusClass = 'status-present';
-              if($attendance['status'] == 'Late') {
-                  $statusClass = 'status-late';
-              } elseif($attendance['status'] == 'Absent') {
-                  $statusClass = 'status-absent';
-              }
-              ?>
-              <span class="status-badge <?php echo $statusClass; ?>"><?php echo htmlspecialchars($attendance['status']); ?></span>
-            </td>
-          </tr>
-          <tr>
-            <td>Approval Status</td>
-            <td>
-              <?php 
-              $approvalStatus = isset($attendance['approval_status']) ? $attendance['approval_status'] : 'Pending';
-              $approvalClass = 'approval-pending';
-              if($approvalStatus == 'Approved') {
-                  $approvalClass = 'approval-approved';
-              } elseif($approvalStatus == 'Rejected') {
-                  $approvalClass = 'approval-rejected';
-              }
-              ?>
-              <span class="status-badge <?php echo $approvalClass; ?>"><?php echo htmlspecialchars($approvalStatus); ?></span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead style="background-color: #71C9CE; color: white;">
+            <tr>
+              <th>Date</th>
+              <th>Check In Time</th>
+              <th>Check Out Time</th>
+              <th>Work Hours</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($dateRange as $day): ?>
+            <tr>
+              <td><?php echo date('F d, Y (D)', strtotime($day['date'])); ?></td>
+              <td>
+                <?php 
+                if ($day['leave_type']) {
+                    echo '-';
+                } elseif ($day['attendance'] && $day['attendance']['check_in_time']) {
+                    echo date('h:i A', strtotime($day['attendance']['check_in_time']));
+                } else {
+                    echo '-';
+                }
+                ?>
+              </td>
+              <td>
+                <?php 
+                if ($day['leave_type']) {
+                    echo '-';
+                } elseif ($day['attendance'] && $day['attendance']['check_out_time']) {
+                    echo date('h:i A', strtotime($day['attendance']['check_out_time']));
+                } else {
+                    echo '-';
+                }
+                ?>
+              </td>
+              <td>
+                <?php 
+                if ($day['leave_type']) {
+                    echo '-';
+                } elseif ($day['attendance'] && $day['attendance']['work_hours']) {
+                    echo number_format($day['attendance']['work_hours'], 2) . ' hrs';
+                } else {
+                    echo '-';
+                }
+                ?>
+              </td>
+              <td>
+                <?php 
+                if ($day['leave_type']) {
+                    echo '<span class="status-badge" style="background: #d1ecf1; color: #0c5460;">On ' . htmlspecialchars($day['leave_type']) . '</span>';
+                } elseif ($day['attendance']) {
+                    // Recalculate status based on check-in time vs work start time
+                    $status = $day['attendance']['status'];
+                    $displayStatus = $status;
+                    
+                    // Get approval status
+                    $approvalStatus = isset($day['attendance']['approval_status']) ? $day['attendance']['approval_status'] : 'Pending';
+                    
+                    // If rejected, show Absent
+                    if ($approvalStatus == 'Rejected') {
+                        $displayStatus = 'Absent';
+                    } elseif ($day['attendance']['check_in_time']) {
+                        // If there's a check-in time, verify if it's late
+                        $check_in_hhmm = substr($day['attendance']['check_in_time'], 0, 5); // Get HH:MM
+                        $work_start_hhmm = substr($work_start, 0, 5); // Get HH:MM
+                        
+                        if ($check_in_hhmm > $work_start_hhmm) {
+                            $displayStatus = 'Late';
+                        } elseif ($displayStatus != 'Absent') {
+                            $displayStatus = 'Present';
+                        }
+                    }
+                    
+                    $statusClass = 'status-present';
+                    if($displayStatus == 'Late') {
+                        $statusClass = 'status-late';
+                    } elseif($displayStatus == 'Absent') {
+                        $statusClass = 'status-absent';
+                    }
+                    echo '<span class="status-badge ' . $statusClass . '">' . htmlspecialchars($displayStatus) . '</span>';
+                } else {
+                    echo '<span class="status-badge" style="background: #e2e3e5; color: #6c757d;">No Record</span>';
+                }
+                ?>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -546,52 +712,32 @@ try {
     <div class="card-body">
       <div class="card-title">
         <span class="material-icons">assessment</span>
-        Attendance Summary (Current Year)
+        Attendance Summary (Selected Period)
       </div>
       <div class="stats-grid">
         <div class="stat-box">
-          <h2><?php echo $stats['total_days'] ? $stats['total_days'] : 0; ?></h2>
-          <p>Total Working Days</p>
+          <h2><?php echo $total_days; ?></h2>
+          <p>Total Days</p>
         </div>
         <div class="stat-box">
-          <h2><?php echo $stats['total_present'] ? $stats['total_present'] : 0; ?></h2>
-          <p>Total Present</p>
+          <h2><?php echo $total_present; ?></h2>
+          <p>Present</p>
         </div>
         <div class="stat-box">
-          <h2><?php echo $stats['total_late'] ? $stats['total_late'] : 0; ?></h2>
-          <p>Total Late</p>
+          <h2><?php echo $total_late; ?></h2>
+          <p>Late</p>
         </div>
         <div class="stat-box">
-          <h2><?php echo $stats['total_absent'] ? $stats['total_absent'] : 0; ?></h2>
-          <p>Total Absent</p>
+          <h2><?php echo $total_absent; ?></h2>
+          <p>Absent</p>
         </div>
         <div class="stat-box">
-          <h2><?php echo $stats['avg_hours'] ? number_format($stats['avg_hours'], 1) : 0; ?></h2>
-          <p>Average Daily Working Hours</p>
+          <h2><?php echo $total_on_leave; ?></h2>
+          <p>On Leave</p>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Leave Summary -->
-  <div class="card">
-    <div class="card-body">
-      <div class="card-title">
-        <span class="material-icons">beach_access</span>
-        Leave Summary (Current Year)
-      </div>
-      <div class="stats-grid">
-        <div class="stat-box" style="background: linear-gradient(135deg, #28a745 0%, #20a038 100%);">
-          <h2><?php echo $leaves['approved_leaves'] ? $leaves['approved_leaves'] : 0; ?></h2>
-          <p>Total Leaves Taken (Approved)</p>
-        </div>
-        <div class="stat-box" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
-          <h2><?php echo $leaves['pending_leaves'] ? $leaves['pending_leaves'] : 0; ?></h2>
-          <p>Total Leaves Pending</p>
-        </div>
-        <div class="stat-box" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
-          <h2><?php echo $leaves['rejected_leaves'] ? $leaves['rejected_leaves'] : 0; ?></h2>
-          <p>Total Leaves Rejected</p>
+        <div class="stat-box">
+          <h2><?php echo number_format($avg_hours, 1); ?></h2>
+          <p>Avg Work Hours/Day</p>
         </div>
       </div>
     </div>
