@@ -63,8 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_settings'])) {
     $work_start_time = sprintf("%02d:%02d:00", $start_hour_24, $start_minute);
     $work_end_time = sprintf("%02d:%02d:00", $end_hour_24, $end_minute);
     
-    // Validation
-    if (empty($start_hour) || empty($start_minute) || empty($end_hour) || empty($end_minute)) {
+    // Validation (check if values are set, not if they're empty - 0 is valid for minutes)
+    if (!isset($start_hour) || !isset($start_minute) || !isset($end_hour) || !isset($end_minute) || 
+        $start_hour === '' || $start_minute === '' || $end_hour === '' || $end_minute === '') {
         $error = "All fields are required";
     } elseif (strtotime($work_start_time) >= strtotime($work_end_time)) {
         $error = "Work end time must be after work start time";
