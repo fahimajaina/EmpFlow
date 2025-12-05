@@ -431,6 +431,19 @@ if(isset($_GET['success'])) {
       <a href="notapproved-leaves.php" class="list-group-item list-group-item-action">Not Approved Leaves</a>
     </div>
 
+    <!-- Salary Management -->
+     <a class="list-group-item list-group-item-action d-flex align-items-center" data-bs-toggle="collapse" href="#payrollMenu" role="button" aria-expanded="false" aria-controls="leaveMgmtMenu">
+      <span class="material-icons">payments</span> Payroll
+      <span class="ms-auto">›</span>
+    </a>
+    <div class="collapse" id="payrollMenu">
+      <a href="add-salary.php" class="list-group-item list-group-item-action">Add Salary</a>
+      <a href="manage-salary.php" class="list-group-item list-group-item-action">Manage Salary</a>
+      <a href="generate-payroll.php" class="list-group-item list-group-item-action">Generate Payroll</a>
+      <a href="manage-payroll.php" class="list-group-item list-group-item-action">Manage Payroll</a>
+      <a href="payroll-settings.php" class="list-group-item list-group-item-action">Settings</a>
+    </div>
+
     <!-- Other Links -->
     <a href="changepassword.php" class="list-group-item list-group-item-action d-flex align-items-center">
       <span class="material-icons">lock</span> Change Password

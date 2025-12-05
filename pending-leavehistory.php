@@ -304,6 +304,12 @@ if (isset($_SESSION['error'])) {
     </div>
 
     <a href="attendance.php"><span class="material-icons">access_time</span> Attendance</a>
+    <a href="my-salary.php" class="list-group-item list-group-item-action">
+      <span class="material-icons">account_balance_wallet</span> My Salary
+    </a>
+    <a href="my-payslips.php" class="list-group-item list-group-item-action">
+      <span class="material-icons">receipt_long</span> My Payslips
+    </a>
 
     <a href="logout.php"><span class="material-icons">logout</span> Sign Out</a>
   </div>
