@@ -50,9 +50,10 @@ if (isset($_POST['toggle_status']) && !empty($_POST['empId'])) {
 
 // Fetch all employees with their department names
 try {
-    $sql = "SELECT e.*, d.DepartmentName 
+    $sql = "SELECT e.*, d.DepartmentName, des.DesignationName 
             FROM tblemployees e 
             LEFT JOIN tbldepartments d ON e.Department = d.id 
+            LEFT JOIN tbldesignation des ON e.designationid = des.id 
             ORDER BY e.id DESC";
     $query = $dbh->prepare($sql);
     $query->execute();
@@ -386,6 +387,7 @@ if (isset($_SESSION['error'])) {
             <th>Emp Id</th>
             <th>Full Name</th>
             <th>Department</th>
+            <th>Designation</th>
             <th>Status</th>
             <th>Reg Date</th>
             <th>Action</th>
@@ -401,6 +403,7 @@ if (isset($_SESSION['error'])) {
             <td><?php echo htmlentities($emp['EmpId']); ?></td>
             <td><?php echo htmlentities($emp['FirstName'] . ' ' . $emp['LastName']); ?></td>
             <td><?php echo htmlentities($emp['DepartmentName']); ?></td>
+            <td><?php echo htmlentities($emp['DesignationName'] ?? 'N/A'); ?></td>
             <td>
               <span class="badge <?php echo $emp['Status'] ? 'bg-success' : 'bg-danger'; ?>">
                 <?php echo $emp['Status'] ? 'Active' : 'Inactive'; ?>

@@ -44,6 +44,12 @@ try {
     $query = $dbh->prepare($sql);
     $query->execute();
     $departments = $query->fetchAll(PDO::FETCH_ASSOC);
+
+    // Fetch designations
+    $sql = "SELECT d.id, d.DesignationName, dept.DepartmentName FROM tbldesignation d LEFT JOIN tbldepartments dept ON d.deptid = dept.id ORDER BY dept.DepartmentName, d.DesignationName";
+    $query = $dbh->prepare($sql);
+    $query->execute();
+    $designations = $query->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     $error = 'Database Error: ' . $e->getMessage();
 }
@@ -59,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $gender = trim($_POST['gender']);
         $dob = trim($_POST['dob']);
         $department = intval($_POST['department']);
+        $designation = !empty($_POST['designation']) ? intval($_POST['designation']) : null;
         $address = trim($_POST['address']);
         $city = trim($_POST['city']);
         $country = trim($_POST['country']);        
@@ -117,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Update employee information
                     $sql = "UPDATE tblemployees SET FirstName=:firstName, LastName=:lastName, 
                             Phonenumber=:mobileno, Gender=:gender, Dob=:dob, Department=:department, 
-                            Address=:address, City=:city, Country=:country 
+                            designationid=:designation, Address=:address, City=:city, Country=:country 
                             WHERE id=:empid";
                     
                     $query = $dbh->prepare($sql);
@@ -127,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $query->bindParam(':gender', $gender, PDO::PARAM_STR);
                     $query->bindParam(':dob', $dob, PDO::PARAM_STR);
                     $query->bindParam(':department', $department, PDO::PARAM_INT);
+                    $query->bindParam(':designation', $designation, PDO::PARAM_INT);
                     $query->bindParam(':address', $address, PDO::PARAM_STR);
                     $query->bindParam(':city', $city, PDO::PARAM_STR);
                     $query->bindParam(':country', $country, PDO::PARAM_STR);
@@ -490,6 +498,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <?php foreach ($departments as $dept): ?>
             <option value="<?php echo htmlspecialchars($dept['id']); ?>" <?php echo ($employee['Department'] == $dept['id']) ? 'selected' : ''; ?>>
               <?php echo htmlspecialchars($dept['DepartmentName']); ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label for="designation" class="form-label">Designation</label>
+        <select class="form-select" id="designation" name="designation">
+          <option value="">Select Designation (Optional)</option>
+          <?php foreach ($designations as $desig): ?>
+            <option value="<?php echo htmlspecialchars($desig['id']); ?>" <?php echo ($employee['designationid'] == $desig['id']) ? 'selected' : ''; ?>>
+              <?php echo htmlspecialchars($desig['DesignationName'] . ' (' . $desig['DepartmentName'] . ')'); ?>
             </option>
           <?php endforeach; ?>
         </select>

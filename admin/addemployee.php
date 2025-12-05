@@ -60,6 +60,7 @@ if (isset($_POST['add'])) {
         $gender = trim($_POST['gender']);
         $dob = $_POST['dob'];
         $department = trim($_POST['department']);
+        $designation = !empty($_POST['designation']) ? trim($_POST['designation']) : null;
         $address = trim($_POST['address']);
         $city = trim($_POST['city']);
         $country = trim($_POST['country']);
@@ -138,8 +139,8 @@ if (isset($_POST['add'])) {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
         // Insert employee data
-        $sql = "INSERT INTO tblemployees (EmpId, FirstName, LastName, EmailId, Password, Gender, Dob, Department, Address, City, Country, Phonenumber) 
-                VALUES (:empid, :fname, :lname, :email, :password, :gender, :dob, :department, :address, :city, :country, :mobile)";
+        $sql = "INSERT INTO tblemployees (EmpId, FirstName, LastName, EmailId, Password, Gender, Dob, Department, designationid, Address, City, Country, Phonenumber) 
+                VALUES (:empid, :fname, :lname, :email, :password, :gender, :dob, :department, :designation, :address, :city, :country, :mobile)";
         
         $query = $dbh->prepare($sql);
         $query->bindParam(':empid', $empId, PDO::PARAM_STR);
@@ -150,6 +151,7 @@ if (isset($_POST['add'])) {
         $query->bindParam(':gender', $gender, PDO::PARAM_STR);
         $query->bindParam(':dob', $dob, PDO::PARAM_STR);
         $query->bindParam(':department', $department, PDO::PARAM_INT);
+        $query->bindParam(':designation', $designation, PDO::PARAM_INT);
         $query->bindParam(':address', $address, PDO::PARAM_STR);
         $query->bindParam(':city', $city, PDO::PARAM_STR);
         $query->bindParam(':country', $country, PDO::PARAM_STR);
@@ -176,6 +178,14 @@ try {
     $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     $error = "Error fetching departments: " . $e->getMessage();
+}
+
+// Fetch designations for dropdown
+try {
+    $stmt = $dbh->query("SELECT d.id, d.DesignationName, dept.DepartmentName FROM tbldesignation d LEFT JOIN tbldepartments dept ON d.deptid = dept.id ORDER BY dept.DepartmentName, d.DesignationName");
+    $designations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $error = "Error fetching designations: " . $e->getMessage();
 }
 ?>
 <!DOCTYPE html>
@@ -520,6 +530,15 @@ try {
         <select class="form-select" id="department" name="department" required>
           <?php foreach ($departments as $dept): ?>
             <option value="<?php echo $dept['id']; ?>"><?php echo $dept['DepartmentName']; ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label for="designation" class="form-label">Designation</label>
+        <select class="form-select" id="designation" name="designation">
+          <option value="">Select Designation (Optional)</option>
+          <?php foreach ($designations as $desig): ?>
+            <option value="<?php echo $desig['id']; ?>"><?php echo $desig['DesignationName'] . ' (' . $desig['DepartmentName'] . ')'; ?></option>
           <?php endforeach; ?>
         </select>
       </div>
