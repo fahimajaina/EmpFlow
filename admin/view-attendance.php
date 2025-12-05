@@ -18,10 +18,11 @@ $attendance_id = intval($_GET['id']);
 
 // Fetch attendance record with employee information
 $sql = "SELECT a.*, e.FirstName, e.LastName, e.EmpId, e.EmailId, e.Phonenumber, e.Gender,
-        d.DepartmentName
+        d.DepartmentName, des.DesignationName
         FROM tblattendance a 
         INNER JOIN tblemployees e ON a.empid = e.id 
         LEFT JOIN tbldepartments d ON e.Department = d.id
+        LEFT JOIN tbldesignation des ON e.designationid = des.id
         WHERE a.id = :attendance_id";
 
 try {
@@ -467,6 +468,10 @@ try {
           <tr>
             <td>Department</td>
             <td><?php echo htmlspecialchars($attendance['DepartmentName']); ?></td>
+          </tr>
+          <tr>
+            <td>Designation</td>
+            <td><?php echo htmlspecialchars($attendance['DesignationName'] ?? 'N/A'); ?></td>
           </tr>
           <tr>
             <td>Gender</td>

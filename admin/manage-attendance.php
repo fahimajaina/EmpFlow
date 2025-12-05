@@ -102,10 +102,11 @@ $work_start = $attendanceSettings ? $attendanceSettings['work_start'] : '09:00:0
 
 // Build attendance query with filters
 try {
-    $sql = "SELECT a.*, e.FirstName, e.LastName, e.EmpId, d.DepartmentName 
+    $sql = "SELECT a.*, e.FirstName, e.LastName, e.EmpId, d.DepartmentName, des.DesignationName 
             FROM tblattendance a 
             INNER JOIN tblemployees e ON a.empid = e.id 
             LEFT JOIN tbldepartments d ON e.Department = d.id 
+            LEFT JOIN tbldesignation des ON e.designationid = des.id 
             WHERE 1=1";
     
     // Apply filters
@@ -786,6 +787,7 @@ try {
             <th>Employee Name</th>
             <th>Emp ID</th>
             <th>Department</th>
+            <th>Designation</th>
             <th>Date</th>
             <th>Check In</th>
             <th>Check Out</th>
@@ -834,6 +836,7 @@ try {
             <td><?php echo htmlspecialchars($record['FirstName'] . ' ' . $record['LastName']); ?></td>
             <td><?php echo htmlspecialchars($record['EmpId']); ?></td>
             <td><?php echo htmlspecialchars($record['DepartmentName']); ?></td>
+            <td><?php echo htmlspecialchars($record['DesignationName'] ?? 'N/A'); ?></td>
             <td><?php echo date('M d, Y', strtotime($record['attendance_date'])); ?></td>
             <td><?php echo $record['check_in_time'] ? date('h:i A', strtotime($record['check_in_time'])) : '-'; ?></td>
             <td><?php echo $record['check_out_time'] ? date('h:i A', strtotime($record['check_out_time'])) : '-'; ?></td>
